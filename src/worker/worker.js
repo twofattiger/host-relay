@@ -980,7 +980,7 @@ function showEnroll(el, data){
           var cmdStr = "./" + binName + " --server " + data.serverUrl + " --id " + data.hostId + " --token " + data.token + " --ssh-target 127.0.0.1:22";
           cmdHtml += '<div class="cmd-block"><div style="font-size:12px;color:#888;margin-bottom:4px;">' + esc(os) + ' / ' + esc(binName) + '</div>' +
                      '<div class="cmd"><pre id="cmd-' + binName + '">' + esc(cmdStr) + '</pre>' +
-                     '<button class="copy" onclick="copyCmd(\'' + esc(cmdStr) + '\', this)">复制</button></div></div>';
+                     '<button class="copy" onclick="copyCmd(this.previousSibling.innerText, this)">复制</button></div></div>';
         });
       }
     });
@@ -989,7 +989,7 @@ function showEnroll(el, data){
   // 兼容旧的单一命令情况或者没有生成多条的情况
   if (!cmdHtml) {
      cmdHtml = '<div class="cmd"><pre id="cmd">' + esc(data.command) + '</pre>' +
-               '<button class="copy" onclick="copyCmd(\'' + esc(data.command) + '\', this)">复制</button></div>';
+               '<button class="copy" onclick="copyCmd(this.previousSibling.innerText, this)">复制</button></div>';
   }
 
   el.innerHTML=
@@ -1035,13 +1035,17 @@ function connectWS(){
 
 // ---------------- 启动 ----------------
 function boot(){
+  if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+    location.href = "https:" + window.location.href.substring(window.location.protocol.length);
+    return;
+  }
+  
   fetch("/api/me").then(function(r){ return r.json(); }).then(function(j){
     if(j.authed){ renderApp(); connectWS(); } else { renderLogin(); } });
 }
 boot();
 </script>
-</body>
-</html>`;
+</body></html>`;
 
 // ============================ 网页终端(/term)============================
 // xterm.js 走 cdnjs(Cloudflare CDN,国内可达)。ticket 从 location.hash 读取(不入服务端日志)。
@@ -1123,6 +1127,11 @@ function doFit(){ if(!fit) return; try{ fit.fit(); }catch(e){}
     ws.send(JSON.stringify({type:"resize", cols:term.cols, rows:term.rows})); }
 
 function connect(){
+  if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+    setMsg("为了安全，Web SSH 必须在 HTTPS 环境下运行。正在跳转...");
+    location.href = "https:" + window.location.href.substring(window.location.protocol.length);
+    return;
+  }
   setMsg("");
   if(!ticket){ setMsg("票据缺失,请从面板重新打开"); return; }
   if(!term) initTerm();
