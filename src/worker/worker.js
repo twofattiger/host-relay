@@ -908,7 +908,7 @@ const TERM_HTML = `<!DOCTYPE html>
 <html lang="zh-CN"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>host-relay · 终端</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/xterm.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
 <style>
   html,body{margin:0;height:100%;background:#0e1116;color:#d6dee8;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC",sans-serif}
@@ -948,8 +948,8 @@ const TERM_HTML = `<!DOCTYPE html>
   <button class="connect" id="go">连接</button>
   <div class="msg" id="msg"></div>
 </div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/xterm.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xterm-addon-fit/0.8.0/xterm-addon-fit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
 <script>
 "use strict";
 var ticket = decodeURIComponent((location.hash||"").slice(1));
