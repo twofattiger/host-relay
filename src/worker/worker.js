@@ -736,6 +736,16 @@ const PAGE_HTML = `<!DOCTYPE html>
     border-radius:8px;padding:14px 14px;margin:0;white-space:pre-wrap;word-break:break-all;color:var(--signal)}
   .cmd .copy{position:absolute;top:8px;right:8px;padding:4px 10px;font-size:12px}
   .hint{font-size:12px;color:var(--amber);margin-top:10px}
+  
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .tag-btn{padding:6px 12px;font-size:13px;background:var(--panel-2);border:1px solid var(--line);border-radius:20px;color:var(--txt);cursor:pointer;transition:all 0.2s;font-family:var(--mono);}
+  .tag-btn:hover{background:var(--line);}
+  .tag-btn.active{background:var(--signal);color:var(--bg);border-color:var(--signal);font-weight:600;}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .dl-btn{display:inline-block;margin-bottom:12px;padding:8px 16px;background:var(--panel-2);color:var(--txt);text-decoration:none;border-radius:6px;font-size:13px;transition:all 0.2s;border:1px solid var(--line);}
+  .dl-btn:hover{background:var(--line);border-color:var(--signal-dim);}
+  
   .row-name{display:flex;gap:8px;margin-bottom:14px}
   .row-name input{flex:1;padding:10px 12px;border-radius:8px;border:1px solid var(--line);
     background:var(--bg);color:var(--txt);font-size:14px}
@@ -950,54 +960,53 @@ function openAdd(){
   dn.onkeydown=function(e){ if(e.key==="Enter") mask.querySelector("#gen").click(); };
 }
 
-function clientRows(clients){
-  var labels={mac:"macOS",linux:"Linux",win:"Windows"};
-  return Object.keys(clients).map(function(os){
-    if (typeof clients[os] === 'object' && clients[os] !== null) {
-      return Object.keys(clients[os]).map(function(binName) {
-        var url = clients[os][binName];
-        if (!url) return '';
-        return '<a href="'+esc(url)+'" target="_blank" rel="noopener">'+
-          '<span>'+(labels[os]||os)+' ('+esc(binName)+')</span>'+esc(url)+'</a>';
-      }).join("");
-    } else {
-      // 兼容旧格式
-      var url = clients[os];
-      if (!url) return '';
-      return '<a href="'+esc(url)+'" target="_blank" rel="noopener">'+
-        '<span>'+(labels[os]||os)+'</span>'+esc(url)+'</a>';
-    }
-  }).join("");
-}
-
 function showEnroll(el, data){
-  var cmdHtml = "";
+  var tagsHtml = '<div class="tags" id="os-tags">';
+  var contentsHtml = '<div id="os-contents">';
+  var first = true;
+
   if (typeof data.clients === 'object') {
     Object.keys(data.clients).forEach(function(os){
       var bins = data.clients[os];
       if (typeof bins === 'object' && bins !== null) {
         Object.keys(bins).forEach(function(binName) {
+          var id = 'tab-' + binName.replace(/[^a-zA-Z0-9]/g, '-');
+          var url = bins[binName];
           var cmdStr = "./" + binName + " --server " + data.serverUrl + " --id " + data.hostId + " --token " + data.token + " --ssh-target 127.0.0.1:22";
-          cmdHtml += '<div class="cmd-block"><div style="font-size:12px;color:#888;margin-bottom:4px;">' + esc(os) + ' / ' + esc(binName) + '</div>' +
-                     '<div class="cmd"><pre id="cmd-' + binName + '">' + esc(cmdStr) + '</pre>' +
-                     '<button class="copy" onclick="copyCmd(this.previousSibling.innerText, this)">复制</button></div></div>';
+          
+          tagsHtml += '<button class="tag-btn ' + (first ? 'active' : '') + '" data-target="' + id + '">' + esc(os) + ' (' + esc(binName) + ')</button>';
+          
+          contentsHtml += '<div class="tab-content ' + (first ? 'active' : '') + '" id="' + id + '">' +
+            (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener" class="dl-btn">⬇️ 点击下载 ' + esc(binName) + '</a>' : '') +
+            '<div class="cmd"><pre>' + esc(cmdStr) + '</pre>' +
+            '<button class="copy" onclick="copyCmd(this.previousSibling.innerText, this)">复制命令</button></div>' +
+          '</div>';
+          
+          first = false;
         });
       }
     });
   }
   
-  // 兼容旧的单一命令情况或者没有生成多条的情况
-  if (!cmdHtml) {
-     cmdHtml = '<div class="cmd"><pre id="cmd">' + esc(data.command) + '</pre>' +
-               '<button class="copy" onclick="copyCmd(this.previousSibling.innerText, this)">复制</button></div>';
-  }
+  tagsHtml += '</div>';
+  contentsHtml += '</div>';
 
   el.innerHTML=
-    '<div class="step"><div class="h">1 · 下载客户端(选择对应平台)</div>'+
-    '<div class="dl">'+clientRows(data.clients)+'</div></div>'+
-    '<div class="step"><div class="h">2 · 在目标主机执行(令牌仅显示一次)</div>'+
-    cmdHtml +
+    '<div class="step"><div class="h">请选择目标主机的操作系统及架构：</div>'+
+    tagsHtml + contentsHtml +
     '<div class="hint">令牌只显示这一次,关闭后无法再查看。丢失可在卡片上「重新生成令牌」。</div></div>';
+
+  // 绑定标签切换事件
+  var tags = el.querySelectorAll('.tag-btn');
+  var contents = el.querySelectorAll('.tab-content');
+  tags.forEach(function(tag) {
+    tag.onclick = function() {
+      tags.forEach(function(t){ t.classList.remove('active'); });
+      contents.forEach(function(c){ c.classList.remove('active'); });
+      this.classList.add('active');
+      el.querySelector('#' + this.getAttribute('data-target')).classList.add('active');
+    };
+  });
 }
 
 window.copyCmd = function(text, btn) {
