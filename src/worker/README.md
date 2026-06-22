@@ -51,6 +51,7 @@ GOOS=windows GOARCH=amd64 go build -o agent-windows-amd64.exe .
    ```
    agent --server wss://你的域名 --id h_xxxx --token tk_xxxx --ssh-target 127.0.0.1:22
    ```
+   > 若要在网页使用极其安全的“私钥认证”登录，需在上述命令末尾追加 `--ssh-key /root/.ssh/id_rsa` 指向本机的私钥文件。
 4. agent 上线后,卡片自动出现并实时刷新 CPU / 内存 / 磁盘 / 运行时长。
 5. 令牌丢失或要重置 → 卡片上「重新生成令牌」(旧令牌立即失效,会踢掉旧连接)。
 
