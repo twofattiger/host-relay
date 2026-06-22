@@ -8,17 +8,17 @@ import { DurableObject } from 'cloudflare:workers';
 // 各平台客户端下载地址(自行替换为你发布的二进制地址,不替换则可以用这个默认的)。
 const CLIENT_URL = {
   linux: {
-    "agent-linux-amd64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-amd64",
-    "agent-linux-arm64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-arm64",
-    "agent-linux-386": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-386",
-    "agent-linux-arm": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-arm"
+    "agent-linux-amd64": "https://github.com/twofattiger/host-relay/releases/download/v1.0.0/agent-linux-amd64",
+    "agent-linux-arm64": "https://github.com/twofattiger/host-relay/releases/download/v1.0.0/agent-linux-arm64",
+    "agent-linux-386": "https://github.com/twofattiger/host-relay/releases/download/v1.0.0/agent-linux-386",
+    "agent-linux-arm": "https://github.com/twofattiger/host-relay/releases/download/v1.0.0/agent-linux-arm"
   },
   mac: {
-    "agent-darwin-amd64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-darwin-amd64",
-    "agent-darwin-arm64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-darwin-arm64"
+    "agent-darwin-amd64": "https://github.com/twofattiger/host-relay/releases/download/v1.0.0/agent-darwin-amd64",
+    "agent-darwin-arm64": "https://github.com/twofattiger/host-relay/releases/download/v1.0.0/agent-darwin-arm64"
   },
   win: {
-    "agent-windows-amd64.exe": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-windows-amd64.exe"
+    "agent-windows-amd64.exe": "https://github.com/twofattiger/host-relay/releases/download/v1.0.0/agent-windows-amd64.exe"
   }
 };
 
