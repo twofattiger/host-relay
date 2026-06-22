@@ -684,7 +684,9 @@ const PAGE_HTML = `<!DOCTYPE html>
   .err{color:var(--red);font-size:13px;min-height:18px;margin:-4px 0 10px}
 
   /* 卡片 */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .grid{display:flex;flex-wrap:wrap;gap:16px}
+  .grid > .card{flex:1 1 300px;max-width:calc(50% - 8px)}
+  @media(max-width:768px){.grid > .card{max-width:100%}}
   .empty{color:var(--muted);text-align:center;padding:60px 0;font-size:14px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;
     position:relative;overflow:hidden}
@@ -713,9 +715,9 @@ const PAGE_HTML = `<!DOCTYPE html>
   .ips .pub{display:inline-flex;align-items:center;cursor:pointer;padding:2px 6px;background:var(--panel-2);border-radius:4px;}
   .ips .pub:hover{color:var(--txt);}
   .ips .pub svg{width:10px;height:10px;margin-left:4px;transition:transform .2s;}
-  .ips.open .pub svg{transform:rotate(180deg);}
+  .card.open-ips .ips .pub svg{transform:rotate(180deg);}
   .ips .locals{display:none;margin-top:6px;padding-left:4px;border-left:2px solid var(--line);}
-  .ips.open .locals{display:block;}
+  .card.open-ips .ips .locals{display:block;}
   .ips .locals div{margin-bottom:2px;}
 
   /* 弹层 */
@@ -759,6 +761,7 @@ const PAGE_HTML = `<!DOCTYPE html>
 var app = document.getElementById("app");
 var ws = null;
 var hosts = {};
+var uiState = { openIps: {} }; // 记录哪些主机的 IP 是展开状态的
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]; }); }
@@ -836,7 +839,11 @@ function renderList(){
     if(del) del.onclick=function(){ confirmDelete(id); };
     if(rg) rg.onclick=function(){ confirmRegen(id); };
     if(mg) mg.onclick=function(){ openTerm(id); };
-    if(ipt) ipt.onclick=function(){ ipt.parentElement.classList.toggle("open"); };
+    if(ipt) ipt.onclick=function(){ 
+      uiState.openIps[id] = !uiState.openIps[id]; // 切换持久化状态
+      var myCard = ipt.closest(".card");
+      if(myCard) myCard.classList.toggle("open-ips", uiState.openIps[id]);
+    };
   });
 }
 
@@ -937,7 +944,8 @@ function cardHtml(h){
     '<button id="rg-'+h.hostId+'">重新生成令牌</button>'+
     '<button class="danger" id="del-'+h.hostId+'">删除</button>'+
     '</span></div>';
-  return '<div class="card '+(on?"online":"offline")+'">'+head+body+foot+'</div>';
+  var cardClass = (on?"online":"offline") + (uiState.openIps[h.hostId] ? " open-ips" : "");
+  return '<div class="card '+cardClass+'">'+head+body+foot+'</div>';
 }
 
 // ---------------- 添加主机弹层 ----------------
