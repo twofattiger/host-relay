@@ -14,6 +14,8 @@ import (
 	"flag"
 	"io"
 	"log"
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"runtime"
@@ -65,6 +67,8 @@ type outMsg struct {
 	DiskTotal uint64  `json:"diskTotal,omitempty"`
 	Uptime    uint64  `json:"uptime,omitempty"`
 	Load1     float64 `json:"load1"`
+	PublicIP  string  `json:"publicIp,omitempty"`
+	LocalIPs  []string `json:"localIps,omitempty"`
 	// SSH 回执
 	ChannelID uint16 `json:"channelId,omitempty"`
 	Msg       string `json:"msg,omitempty"`
@@ -213,7 +217,10 @@ func runOnce(wsURL, hostname string) error {
 	defer pingT.Stop()
 	statusT := time.NewTicker(*interval)
 	defer statusT.Stop()
-	reportStatus(c, hostname)
+	
+	// 从 wsURL 解析出 scheme 和 host，用于获取 IP
+	u, _ := url.Parse(wsURL)
+	reportStatus(c, hostname, u.Scheme, u.Host)
 
 	for {
 		select {
@@ -222,20 +229,20 @@ func runOnce(wsURL, hostname string) error {
 				return err
 			}
 		case <-statusT.C:
-			reportStatus(c, hostname)
+			reportStatus(c, hostname, u.Scheme, u.Host)
 		case err := <-done:
 			return err
 		}
 	}
 }
 
-func reportStatus(c *conn, hostname string) {
-	if err := c.writeJSON(collectStatus(hostname)); err != nil {
+func reportStatus(c *conn, hostname, scheme, host string) {
+	if err := c.writeJSON(collectStatus(hostname, scheme, host)); err != nil {
 		log.Printf("上报失败: %v", err)
 	}
 }
 
-func collectStatus(hostname string) outMsg {
+func collectStatus(hostname, scheme, hostAddr string) outMsg {
 	m := outMsg{Type: "status", TS: time.Now().UnixMilli(), Hostname: hostname}
 	if pcts, err := cpu.Percent(0, false); err == nil && len(pcts) > 0 {
 		m.CPU = pcts[0]
@@ -258,7 +265,47 @@ func collectStatus(hostname string) outMsg {
 			m.Load1 = la.Load1
 		}
 	}
+
+	m.PublicIP = getPublicIP(scheme, hostAddr)
+	m.LocalIPs = getLocalIPs()
+
 	return m
+}
+
+func getPublicIP(scheme, host string) string {
+	httpScheme := "http"
+	if scheme == "wss" || scheme == "https" {
+		httpScheme = "https"
+	}
+	apiURL := httpScheme + "://" + host + "/api/ip"
+
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get(apiURL)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 {
+		ip, _ := io.ReadAll(resp.Body)
+		return string(ip)
+	}
+	return ""
+}
+
+func getLocalIPs() []string {
+	var ips []string
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ips
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				ips = append(ips, ipnet.IP.String())
+			}
+		}
+	}
+	return ips
 }
 
 // ----------------- 消息分发 -----------------

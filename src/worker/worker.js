@@ -194,6 +194,10 @@ export default {
       }
 
       // ---- API ----
+      if (path === '/api/ip' && request.method === 'GET') {
+        return new Response(clientIp(request), { headers: { 'Content-Type': 'text/plain' } });
+      }
+
       if (path === '/api/me' && request.method === 'GET') {
         return json({ authed: await isAuthed(request, env) });
       }
@@ -693,6 +697,14 @@ const PAGE_HTML = `<!DOCTYPE html>
   .card .foot .acts{display:flex;gap:6px}
   .card .foot button{padding:5px 9px;font-size:12px}
   .offnote{color:var(--muted);font-size:12px;padding:8px 0}
+  .ips{font-size:11px;font-family:var(--mono);color:var(--muted);margin:8px 0 0 0;}
+  .ips .pub{display:inline-flex;align-items:center;cursor:pointer;padding:2px 6px;background:var(--panel-2);border-radius:4px;}
+  .ips .pub:hover{color:var(--txt);}
+  .ips .pub svg{width:10px;height:10px;margin-left:4px;transition:transform .2s;}
+  .ips.open .pub svg{transform:rotate(180deg);}
+  .ips .locals{display:none;margin-top:6px;padding-left:4px;border-left:2px solid var(--line);}
+  .ips.open .locals{display:block;}
+  .ips .locals div{margin-bottom:2px;}
 
   /* 弹层 */
   .mask{position:fixed;inset:0;background:rgba(5,8,12,.7);display:flex;align-items:flex-start;
@@ -783,9 +795,11 @@ function renderList(){
   list.innerHTML=ids.map(function(id){ return cardHtml(hosts[id]); }).join("");
   ids.forEach(function(id){
     var del=document.getElementById("del-"+id), rg=document.getElementById("rg-"+id), mg=document.getElementById("mg-"+id);
+    var ipt=document.getElementById("ip-"+id);
     if(del) del.onclick=function(){ confirmDelete(id); };
     if(rg) rg.onclick=function(){ confirmRegen(id); };
     if(mg) mg.onclick=function(){ openTerm(id); };
+    if(ipt) ipt.onclick=function(){ ipt.parentElement.classList.toggle("open"); };
   });
 }
 
@@ -868,6 +882,14 @@ function cardHtml(h){
       '<div class="metric"><div class="lbl"><span>内存</span><b>'+fmtBytes(s.memUsed)+' / '+fmtBytes(s.memTotal)+'</b></div>'+bar(memPct)+'</div>'+
       '<div class="metric"><div class="lbl"><span>磁盘</span><b>'+fmtBytes(s.diskUsed)+' / '+fmtBytes(s.diskTotal)+'</b></div>'+bar(diskPct)+'</div>'+
       '<div class="metric"><div class="lbl"><span>运行</span><b>'+fmtUptime(s.uptime)+(s.load1!=null?'  ·  load '+s.load1.toFixed(2):'')+'</b></div></div>';
+    
+    if(s.publicIp || (s.localIps && s.localIps.length > 0)) {
+      var pub = s.publicIp || "未知外网 IP";
+      var locals = (s.localIps || []).map(function(ip){ return "<div>"+esc(ip)+"</div>"; }).join("");
+      body += '<div class="ips"><div class="pub" id="ip-'+h.hostId+'">'+esc(pub)+
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></div>'+
+              (locals ? '<div class="locals">'+locals+'</div>' : '') + '</div>';
+    }
   } else {
     body = '<div class="offnote">离线 · 暂无实时数据</div>';
   }
