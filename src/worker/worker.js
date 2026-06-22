@@ -1025,7 +1025,7 @@ function regen(id){
     document.body.appendChild(mask);
     mask.querySelector(".x").onclick=function(){ document.body.removeChild(mask); };
     mask.onclick=function(e){ if(e.target===mask) document.body.removeChild(mask); };
-    showEnroll(mask.querySelector("#result"), {command:r.body.command, clients:r.body.clients});
+    showEnroll(mask.querySelector("#result"), r.body);
   });
 }
 
