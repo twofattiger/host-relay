@@ -5,7 +5,7 @@
 import { DurableObject } from 'cloudflare:workers';
 
 // ============================ 配置 ============================
-// 各平台客户端下载地址(自行替换为你发布的二进制地址)。
+// 各平台客户端下载地址(自行替换为你发布的二进制地址,不替换则可以用这个默认的)。
 const CLIENT_URL = {
   linux: {
     "agent-linux-amd64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-amd64",
