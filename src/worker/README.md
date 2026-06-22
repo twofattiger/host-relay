@@ -74,3 +74,12 @@ GOOS=windows GOARCH=amd64 go build -o agent-windows-amd64.exe .
 ## 免费额度
 - WS 消息经 Worker 转发不计请求;DO 入站消息 20:1 计费;hibernation 期间不计 duration。
 - 个人 homelab 规模稳在免费额度内。
+
+## 五、在 CF 后台查看数据库数据
+你可以直接在 Cloudflare Dashboard 中查看内置的 SQLite 数据：
+1. Dashboard -> Workers & Pages -> Durable Objects，点击 `Hub` 或 `Host`，切换到 **Data / SQLite**。
+2. 选择 **"Construct ID from string name"** (从名称构造 ID)。
+3. 输入对应的 Name：
+   - **查主机列表/登录记录**：选 `Hub`，Name 填入 **`_hub`**。
+   - **查单台主机的加密凭据**：选 `Host`，Name 填入该主机的 `hostId` (例如 `h_1a2b3c4d5e`)。
+4. 确认后即可在控制台执行 `SELECT * FROM hosts;` 等 SQL 语句查看数据。
