@@ -2,7 +2,10 @@
 # 之后改代码可直接在 Cloudflare Dashboard 网页编辑器粘贴 worker.js。
 name = "host-relay"
 main = "worker.js"
-compatibility_date = "2026-06-05"
+compatibility_date = "2026-05-18"
+
+[observability]
+enabled = true
 
 [[durable_objects.bindings]]
 name = "HUB"
@@ -17,13 +20,13 @@ class_name = "Host"
 tag = "v1"
 new_sqlite_classes = ["Hub", "Host"]
 
-# 部署后在 Dashboard -> Settings -> Variables & Secrets 添加(均为 Secret 类型):
+# 部署后配置以下 4 个 Secret(Dashboard -> Settings -> Variables & Secrets,类型选 Secret):
 #   ADMIN_PASSWORD   面板登录密码
 #   SESSION_SECRET   会话 cookie 签名密钥(随机长字符串)
-# 或用命令:
+#   TICKET_KEY       SSH ticket 签名密钥(随机长字符串)
+#   ENC_KEY          保存密码用的 AES-GCM 密钥(随机长字符串)
+# 或用命令逐个写入:
 #   npx wrangler secret put ADMIN_PASSWORD
 #   npx wrangler secret put SESSION_SECRET
-#
-# M3(网页 SSH)时再补:
-#   TICKET_KEY       SSH ticket 签名密钥
-#   ENC_KEY          保存密码用的 AES-GCM 密钥
+#   npx wrangler secret put TICKET_KEY
+#   npx wrangler secret put ENC_KEY
