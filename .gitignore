@@ -1,3 +1,4 @@
 .trae/
 src/agent/out/
 .wrangler/
+.cursor/
