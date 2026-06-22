@@ -783,7 +783,22 @@ function renderApp(){
     '</div></header><div id="list"></div></div>';
   document.getElementById("add").onclick=openAdd;
   document.getElementById("logout").onclick=function(){
-    api("/api/logout",{}).then(function(){ if(ws) ws.close(); renderLogin(); }); };
+    var mask=document.createElement("div"); mask.className="mask";
+    mask.innerHTML=
+      '<div class="modal" style="width:400px"><h2>退出登录<span class="x">&times;</span></h2>'+
+      '<div class="step"><div class="h">确定要退出当前账号吗？</div></div>'+
+      '<div style="text-align:right"><button class="ghost x-btn" style="margin-right:10px">取消</button>'+
+      '<button class="primary" id="do-logout" style="background:var(--red);border-color:var(--red);color:#fff;">确认退出</button></div></div>';
+    document.body.appendChild(mask);
+    function close(){ document.body.removeChild(mask); }
+    mask.querySelector(".x").onclick=close;
+    mask.querySelector(".x-btn").onclick=close;
+    mask.onclick=function(e){ if(e.target===mask) close(); };
+    mask.querySelector("#do-logout").onclick=function(){
+      close();
+      api("/api/logout",{}).then(function(){ if(ws) ws.close(); renderLogin(); });
+    };
+  };
   renderList();
 }
 
