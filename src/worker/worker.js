@@ -7,9 +7,19 @@ import { DurableObject } from 'cloudflare:workers';
 // ============================ 配置 ============================
 // 各平台客户端下载地址(自行替换为你发布的二进制地址)。
 const CLIENT_URL = {
-  linux: 'https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-amd64',
-  mac:   'https://github.com/twofattiger/host-relay/releases/latest/download/agent-darwin-arm64',
-  win:   'https://github.com/twofattiger/host-relay/releases/latest/download/agent-windows-amd64.exe',
+  linux: {
+    "agent-linux-amd64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-amd64",
+    "agent-linux-arm64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-arm64",
+    "agent-linux-386": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-386",
+    "agent-linux-arm": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-linux-arm"
+  },
+  mac: {
+    "agent-darwin-amd64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-darwin-amd64",
+    "agent-darwin-arm64": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-darwin-arm64"
+  },
+  win: {
+    "agent-windows-amd64.exe": "https://github.com/twofattiger/host-relay/releases/latest/download/agent-windows-amd64.exe"
+  }
 };
 
 const SESSION_TTL_MS   = 7 * 24 * 60 * 60 * 1000; // 会话有效期 7 天
@@ -241,14 +251,16 @@ export default {
           const body = await request.json().catch(() => ({}));
           const name = (body.displayName || '').toString().slice(0, 64) || '未命名主机';
           const { hostId, token } = await hub(env).enroll(name);
-          return json({ hostId, token, command: agentCommand(url.host, hostId, token), clients: CLIENT_URL });
+          const serverUrl = (url.protocol === 'http:' ? 'ws://' : 'wss://') + url.host;
+          return json({ hostId, token, command: agentCommand(url.host, hostId, token), serverUrl, clients: CLIENT_URL });
         }
 
         if (path === '/api/regenerate' && request.method === 'POST') {
           const body = await request.json().catch(() => ({}));
           const r = await hub(env).regenerate((body.hostId || '').toString());
           if (!r) return json({ error: '主机不存在' }, { status: 404 });
-          return json({ token: r.token, command: agentCommand(url.host, r.hostId, r.token), clients: CLIENT_URL });
+          const serverUrl = (url.protocol === 'http:' ? 'ws://' : 'wss://') + url.host;
+          return json({ token: r.token, command: agentCommand(url.host, r.hostId, r.token), serverUrl, clients: CLIENT_URL, hostId: r.hostId });
         }
 
         if (path === '/api/delete' && request.method === 'POST') {
@@ -940,23 +952,61 @@ function openAdd(){
 
 function clientRows(clients){
   var labels={mac:"macOS",linux:"Linux",win:"Windows"};
-  return Object.keys(clients).map(function(k){
-    return '<a href="'+esc(clients[k])+'" target="_blank" rel="noopener">'+
-      '<span>'+(labels[k]||k)+'</span>'+esc(clients[k])+'</a>'; }).join("");
+  return Object.keys(clients).map(function(os){
+    if (typeof clients[os] === 'object' && clients[os] !== null) {
+      return Object.keys(clients[os]).map(function(binName) {
+        var url = clients[os][binName];
+        if (!url) return '';
+        return '<a href="'+esc(url)+'" target="_blank" rel="noopener">'+
+          '<span>'+(labels[os]||os)+' ('+esc(binName)+')</span>'+esc(url)+'</a>';
+      }).join("");
+    } else {
+      // 兼容旧格式
+      var url = clients[os];
+      if (!url) return '';
+      return '<a href="'+esc(url)+'" target="_blank" rel="noopener">'+
+        '<span>'+(labels[os]||os)+'</span>'+esc(url)+'</a>';
+    }
+  }).join("");
 }
 
 function showEnroll(el, data){
+  var cmdHtml = "";
+  if (typeof data.clients === 'object') {
+    Object.keys(data.clients).forEach(function(os){
+      var bins = data.clients[os];
+      if (typeof bins === 'object' && bins !== null) {
+        Object.keys(bins).forEach(function(binName) {
+          var cmdStr = "./" + binName + " --server " + data.serverUrl + " --id " + data.hostId + " --token " + data.token + " --ssh-target 127.0.0.1:22";
+          cmdHtml += '<div class="cmd-block"><div style="font-size:12px;color:#888;margin-bottom:4px;">' + esc(os) + ' / ' + esc(binName) + '</div>' +
+                     '<div class="cmd"><pre id="cmd-' + binName + '">' + esc(cmdStr) + '</pre>' +
+                     '<button class="copy" onclick="copyCmd(\'' + esc(cmdStr) + '\', this)">复制</button></div></div>';
+        });
+      }
+    });
+  }
+  
+  // 兼容旧的单一命令情况或者没有生成多条的情况
+  if (!cmdHtml) {
+     cmdHtml = '<div class="cmd"><pre id="cmd">' + esc(data.command) + '</pre>' +
+               '<button class="copy" onclick="copyCmd(\'' + esc(data.command) + '\', this)">复制</button></div>';
+  }
+
   el.innerHTML=
     '<div class="step"><div class="h">1 · 下载客户端(选择对应平台)</div>'+
     '<div class="dl">'+clientRows(data.clients)+'</div></div>'+
     '<div class="step"><div class="h">2 · 在目标主机执行(令牌仅显示一次)</div>'+
-    '<div class="cmd"><pre id="cmd">'+esc(data.command)+'</pre>'+
-    '<button class="copy" id="cp">复制</button></div>'+
+    cmdHtml +
     '<div class="hint">令牌只显示这一次,关闭后无法再查看。丢失可在卡片上「重新生成令牌」。</div></div>';
-  el.querySelector("#cp").onclick=function(){
-    navigator.clipboard.writeText(data.command).then(function(){
-      el.querySelector("#cp").textContent="已复制"; }); };
 }
+
+window.copyCmd = function(text, btn) {
+  navigator.clipboard.writeText(text).then(function(){
+    var oldText = btn.textContent;
+    btn.textContent = "已复制";
+    setTimeout(function(){ btn.textContent = oldText; }, 2000);
+  });
+};
 
 function regen(id){
   api("/api/regenerate",{hostId:id}).then(function(r){
