@@ -1,13 +1,5 @@
 #!/bin/bash
 
-# 设置 conda go 环境路径
-export PATH=/Users/work_data/anaconda/envs/mygo1.22/bin:$PATH
-
-# 检查 go 是否可用
-if ! command -v go &> /dev/null; then
-    echo "错误: 找不到 go 命令，请检查 /Users/work_data/anaconda/envs/mygo1.22/bin 是否存在。"
-    exit 1
-fi
 
 # 切换到脚本所在目录(确保在 agent 目录下执行)
 cd "$(dirname "$0")"
