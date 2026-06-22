@@ -29,6 +29,7 @@ chmod +x build.sh
 | `--server` | ✅ 是 | 无 | 你的 Cloudflare Worker 服务端地址，必须以 `wss://` (或 `ws://`) 开头。 |
 | `--id` | ✅ 是 | 无 | 面板分配给该主机的唯一 ID（如 `h_1a2b3c`）。 |
 | `--token` | ✅ 是 | 无 | 面板生成的注册令牌（只显示一次），用于安全绑定。 |
+| `--log` | ❌ 否 | 无 | 指定日志保存的文件路径（例如 `/var/log/host-relay.log`）。不指定此参数时，默认不保存日志到文件，仅输出到终端。 |
 | `--ssh-target` | ❌ 否 | `127.0.0.1:22` | 允许网页端连接的本地 SSH 目标地址，相当于白名单限制。 |
 | `--ssh-key` | ❌ 否 | 无 | 极其安全的**私钥免密认证**方式。指定目标机上的一个私钥文件路径（如 `/root/.ssh/id_rsa`）。在网页端选择“私钥”登录时，Agent 会直接用这个文件进行认证，私钥内容绝不经过网络。 |
 | `--interval` | ❌ 否 | `30s` | 状态（CPU/内存等）的上报间隔时间。 |
@@ -42,7 +43,13 @@ chmod +x build.sh
 ./agent --server wss://your-domain.com --id h_12345 --token tk_abcde
 ```
 
-### 2. 高级运行（私钥免密登录）
+### 2. 记录运行日志
+如果需要将运行日志保存到文件中，可以使用 `--log` 参数：
+```bash
+./agent --server wss://your-domain.com --id h_12345 --token tk_abcde --log /var/log/host-relay.log
+```
+
+### 3. 高级运行（私钥免密登录）
 当你希望最高级别的安全，不在网页上敲密码，而是让 Agent 在本地验证私钥时：
 ```bash
 ./agent --server wss://your-domain.com --id h_12345 --token tk_abcde --ssh-key /root/.ssh/id_rsa

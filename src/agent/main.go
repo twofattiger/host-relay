@@ -41,6 +41,7 @@ var (
 	sshKey    = flag.String("ssh-key", "", "私钥文件路径(私钥认证用,不离开本机)")
 	interval  = flag.Duration("interval", 30*time.Second, "状态上报间隔")
 	diskPath  = flag.String("disk-path", defaultDiskPath(), "磁盘用量统计路径")
+	logFile   = flag.String("log", "", "指定日志文件路径,不指定则默认不保存日志文件")
 )
 
 func defaultDiskPath() string {
@@ -124,6 +125,22 @@ func (c *conn) writePing() error {
 
 func main() {
 	flag.Parse()
+
+	// 如果指定了日志文件，重定向 log 输出
+	if *logFile != "" {
+		f, err := os.OpenFile(*logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			log.Fatalf("无法打开日志文件 %s: %v", *logFile, err)
+		}
+		defer f.Close()
+		log.SetOutput(io.MultiWriter(os.Stdout, f))
+	}
+
+	// 开始正常的 Agent 逻辑
+	startAgent()
+}
+
+func startAgent() {
 	if *server == "" || *hostID == "" || *token == "" {
 		log.Fatal("缺少必填参数:--server / --id / --token")
 	}
