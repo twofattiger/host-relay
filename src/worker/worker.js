@@ -783,10 +783,64 @@ function renderList(){
   list.innerHTML=ids.map(function(id){ return cardHtml(hosts[id]); }).join("");
   ids.forEach(function(id){
     var del=document.getElementById("del-"+id), rg=document.getElementById("rg-"+id), mg=document.getElementById("mg-"+id);
-    if(del) del.onclick=function(){ if(confirm("删除该主机?")) api("/api/delete",{hostId:id}); };
-    if(rg) rg.onclick=function(){ regen(id); };
+    if(del) del.onclick=function(){ confirmDelete(id); };
+    if(rg) rg.onclick=function(){ confirmRegen(id); };
     if(mg) mg.onclick=function(){ openTerm(id); };
   });
+}
+
+function confirmDelete(id) {
+  var h = hosts[id];
+  if (!h) return;
+  var mask=document.createElement("div"); mask.className="mask";
+  mask.innerHTML=
+    '<div class="modal"><h2>删除主机<span class="x">&times;</span></h2>'+
+    '<div class="step"><div class="h">此操作不可逆。将永久删除该主机及所有相关数据。</div></div>'+
+    '<div class="step" style="margin-bottom:6px;"><div class="h">请输入 <b>'+esc(h.displayName)+'</b> 以确认:</div></div>'+
+    '<div class="row-name" style="margin-bottom:16px;"><input id="dn-del" autocomplete="off" autofocus></div>'+
+    '<button class="primary" id="do-del" style="width:100%;background:var(--red);border-color:var(--red);color:#fff;opacity:0.5;" disabled>我了解后果，删除此主机</button></div>';
+  document.body.appendChild(mask);
+  function close(){ document.body.removeChild(mask); }
+  mask.querySelector(".x").onclick=close;
+  mask.onclick=function(e){ if(e.target===mask) close(); };
+  
+  var input = mask.querySelector("#dn-del");
+  var btn = mask.querySelector("#do-del");
+  input.oninput = function() {
+    if(input.value === h.displayName) {
+      btn.disabled = false;
+      btn.style.opacity = "1";
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+    }
+  };
+  btn.onclick=function(){
+    if(input.value === h.displayName) {
+      close();
+      api("/api/delete",{hostId:id});
+    }
+  };
+}
+
+function confirmRegen(id) {
+  var h = hosts[id];
+  if (!h) return;
+  var mask=document.createElement("div"); mask.className="mask";
+  mask.innerHTML=
+    '<div class="modal"><h2>重新生成令牌<span class="x">&times;</span></h2>'+
+    '<div class="step"><div class="h">正在为「'+esc(h.displayName)+'」重新生成令牌</div></div>'+
+    '<div class="hint" style="margin-bottom:16px;">⚠️ 警告：旧令牌将立即失效！如果该主机目前在线，它会被强制踢下线，直到你在目标主机上使用新令牌重新运行 agent。</div>'+
+    '<div style="text-align:right"><button class="ghost x-btn" style="margin-right:10px">取消</button><button class="primary" id="do-regen" style="background:var(--red);border-color:var(--red);color:#fff;">确认生成</button></div></div>';
+  document.body.appendChild(mask);
+  function close(){ document.body.removeChild(mask); }
+  mask.querySelector(".x").onclick=close;
+  mask.querySelector(".x-btn").onclick=close;
+  mask.onclick=function(e){ if(e.target===mask) close(); };
+  mask.querySelector("#do-regen").onclick=function(){
+    close();
+    regen(id);
+  };
 }
 
 function openTerm(id){
