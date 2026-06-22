@@ -774,7 +774,7 @@ function ago(ts){ if(!ts) return "从未"; var s=Math.floor((Date.now()-ts)/1000
 function api(path, body){
   return fetch(path, {method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify(body||{})}).then(function(r){ return r.json().then(function(j){
-      return {status:r.status, body:j}; }); });
+      return {status:r.status, body:j}; }); }).catch(function(e){ return {status:500, body:{error:String(e)}}; });
 }
 
 // ---------------- 登录 ----------------
@@ -896,7 +896,7 @@ function confirmRegen(id) {
 
 function openTerm(id){
   api("/api/ticket",{hostId:id}).then(function(r){
-    if(!r.body.ticket){ alert("无法打开终端"); return; }
+    if(!r.body.ticket){ alert(r.body.error || "无法打开终端"); return; }
     window.open("/term#"+encodeURIComponent(r.body.ticket), "_blank", "width=960,height=620");
   });
 }
@@ -955,7 +955,9 @@ function openAdd(){
   var dn=mask.querySelector("#dn");
   mask.querySelector("#gen").onclick=function(){
     api("/api/enroll",{displayName:dn.value}).then(function(r){
-      if(r.body.command) showEnroll(mask.querySelector("#result"), r.body); });
+      if(r.body.command) showEnroll(mask.querySelector("#result"), r.body); 
+      else alert(r.body.error || "添加失败");
+    });
   };
   dn.onkeydown=function(e){ if(e.key==="Enter") mask.querySelector("#gen").click(); };
 }
@@ -1010,10 +1012,12 @@ function showEnroll(el, data){
 }
 
 window.copyCmd = function(text, btn) {
+  if (btn.dataset.copying) return;
+  btn.dataset.copying = "1";
   navigator.clipboard.writeText(text).then(function(){
     var oldText = btn.textContent;
     btn.textContent = "已复制";
-    setTimeout(function(){ btn.textContent = oldText; }, 2000);
+    setTimeout(function(){ btn.textContent = oldText; delete btn.dataset.copying; }, 2000);
   });
 };
 
